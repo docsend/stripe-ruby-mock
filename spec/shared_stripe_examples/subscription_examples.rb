@@ -23,7 +23,7 @@ shared_examples 'Customer Subscriptions with plans' do
 
       subscription = Stripe::Subscription.create({
         customer: customer.id,
-        items: [{ plan: 'silver' }],
+        items: [{ plan: 'silver', :quantity => 4 }],
         metadata: { foo: "bar", example: "yes" }
       })
 
@@ -694,7 +694,7 @@ shared_examples 'Customer Subscriptions with plans' do
       gold_plan = stripe_helper.create_plan(id: 'gold', product: product.id)
       addon_plan = stripe_helper.create_plan(id: 'addon_plan', product: product.id)
       sub = Stripe::Subscription.retrieve(customer.subscriptions.data.first.id)
-      sub.items = [{ plan: gold_plan.id, quantity: 2 }, { plan: addon_plan.id, quantity: 2 }]
+      sub.items = [{ plan: gold_plan.id, quantity: 4 }, { plan: addon_plan.id, quantity:4 }]
       expect(sub.save).to be_truthy
 
       expect(sub.object).to eq('subscription')
@@ -882,6 +882,20 @@ shared_examples 'Customer Subscriptions with plans' do
         expect(e).to be_a Stripe::InvalidRequestError
         expect(e.http_status).to eq(404)
         expect(e.message).to_not be_nil
+      }
+    end
+
+    it "throws an error when updating quantity and subscription has multiple plans" do
+      gold_plan = stripe_helper.create_plan(id: 'gold')
+      addon_plan = stripe_helper.create_plan(id: 'addon')
+      customer = Stripe::Customer.create(id: 'test_customer_sub', source: gen_card_tk)
+      sub = Stripe::Subscription.create(customer: customer.id, items: [{ plan: gold_plan.id }, { plan: addon_plan.id }])
+
+      sub.quantity = 5
+      expect { sub.save }.to raise_error {|e|
+        expect(e).to be_a Stripe::InvalidRequestError
+        expect(e.http_status).to eq(400)
+        expect(e.message).to eq('Cannot update using quantity parameter when multiple plans exist on the subscription. Updates must be made to individual items instead.')
       }
     end
 
