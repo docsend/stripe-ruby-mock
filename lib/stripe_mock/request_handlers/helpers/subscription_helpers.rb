@@ -24,6 +24,19 @@ module StripeMock
           params.merge!({status: 'trialing', current_period_end: end_time, trial_start: start_time, trial_end: end_time})
         end
 
+        items = options[:items]
+        items = items.values if items.respond_to?(:values)
+        if items
+          items_data = []
+          items.each do |item|
+            plan = assert_existence(:plan, item[:plan], plans[item[:plan]])
+            quantity = item[:quantity] || 1
+            items_data.push(Data.mock_subscription_item(plan: plan, quantity: quantity, created: Time.now.utc.to_i))
+          end
+          params[:items] = Data.mock_list_object(items_data)
+          params.delete(:plan) if items_data.size > 1
+        end
+
         params
       end
 

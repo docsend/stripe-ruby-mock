@@ -504,6 +504,61 @@ shared_examples 'Customer Subscriptions' do
       expect(customer.subscriptions.data.first.customer).to eq(customer.id)
     end
 
+    it "updates a stripe customer's existing subscription with single plan when multiple plans inside of items" do
+      silver_plan = stripe_helper.create_plan(id: 'silver')
+      gold_plan = stripe_helper.create_plan(id: 'gold')
+      addon_plan = stripe_helper.create_plan(id: 'addon_plan')
+      customer = Stripe::Customer.create(id: 'test_customer_sub', source: gen_card_tk, plan: silver_plan.id)
+
+      sub = Stripe::Subscription.retrieve(customer.subscriptions.data.first.id)
+      sub.items = [{ plan: gold_plan.id, quantity: 4 }, { plan: addon_plan.id, quantity: 5 }]
+      expect(sub.save).to be_truthy
+
+      expect(sub.object).to eq('subscription')
+      expect(sub.plan).to be_nil
+
+      customer = Stripe::Customer.retrieve('test_customer_sub')
+      expect(customer.subscriptions.data).to_not be_empty
+      expect(customer.subscriptions.count).to eq(1)
+      expect(customer.subscriptions.data.length).to eq(1)
+
+      expect(customer.subscriptions.data.first.id).to eq(sub.id)
+      expect(customer.subscriptions.data.first.plan).to be_nil
+      expect(customer.subscriptions.data.first.customer).to eq(customer.id)
+      expect(customer.subscriptions.data.first.items.data[0].plan.to_hash).to eq(gold_plan.to_hash)
+      expect(customer.subscriptions.data.first.items.data[0].quantity).to eq(4)
+      expect(customer.subscriptions.data.first.items.data[1].plan.to_hash).to eq(addon_plan.to_hash)
+      expect(customer.subscriptions.data.first.items.data[1].quantity).to eq(5)
+    end
+
+    it "updates a stripe customer's existing subscription with multple plans when multiple plans inside of items" do
+      silver_plan = stripe_helper.create_plan(id: 'silver')
+      gold_plan = stripe_helper.create_plan(id: 'gold')
+      addon1_plan = stripe_helper.create_plan(id: 'addon1')
+      addon2_plan = stripe_helper.create_plan(id: 'addon2')
+      customer = Stripe::Customer.create(id: 'test_customer_sub', source: gen_card_tk)
+      sub = Stripe::Subscription.create(customer: customer.id, items: [{ plan: silver_plan.id }, { plan: addon1_plan.id }])
+
+      sub.items = [{ plan: gold_plan.id, quantity: 1 }, { plan: addon2_plan.id, quantity: 5 }]
+      expect(sub.save).to be_truthy
+
+      expect(sub.object).to eq('subscription')
+      expect(sub.plan).to be_nil
+
+      customer = Stripe::Customer.retrieve('test_customer_sub')
+      expect(customer.subscriptions.data).to_not be_empty
+      expect(customer.subscriptions.count).to eq(1)
+      expect(customer.subscriptions.data.length).to eq(1)
+
+      expect(customer.subscriptions.data.first.id).to eq(sub.id)
+      expect(customer.subscriptions.data.first.plan).to be_nil
+      expect(customer.subscriptions.data.first.customer).to eq(customer.id)
+      expect(customer.subscriptions.data.first.items.data[0].plan.to_hash).to eq(gold_plan.to_hash)
+      expect(customer.subscriptions.data.first.items.data[0].quantity).to eq(1)
+      expect(customer.subscriptions.data.first.items.data[1].plan.to_hash).to eq(addon2_plan.to_hash)
+      expect(customer.subscriptions.data.first.items.data[1].quantity).to eq(5)
+    end
+
     it 'when adds coupon', live: true do
       plan = stripe_helper.create_plan(id: 'plan_with_coupon2', name: 'One More Test Plan', amount: 777)
       coupon = stripe_helper.create_coupon
