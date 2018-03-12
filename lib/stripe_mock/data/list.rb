@@ -8,8 +8,7 @@ module StripeMock
         @limit = [[options[:limit] || 10, 100].min, 1].max # restrict @limit to 1..100
         @starting_after = options[:starting_after]
         if @data.first.is_a?(Hash) && @data.first[:created]
-          @data.sort_by! { |x| x[:created] }
-          @data.reverse!
+          @data.sort! { |x, y| y[:created] <=> x[:created] }
         elsif @data.first.respond_to?(:created)
           @data.sort_by { |x| x.created }
           @data.reverse!
