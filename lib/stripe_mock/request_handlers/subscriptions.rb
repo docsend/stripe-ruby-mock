@@ -36,7 +36,9 @@ module StripeMock
         if params[:plan]
           params[:plan].to_s
         elsif params[:items]
-          item = params[:items].values.find { |item| item[:plan] }
+          items = params[:items]
+          items = items.values if items.respond_to?(:values)
+          item = items.find { |item| item[:plan] }
           if item
             item[:plan].to_s
           end
