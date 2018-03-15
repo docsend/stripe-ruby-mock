@@ -516,6 +516,7 @@ shared_examples 'Customer Subscriptions' do
 
       expect(sub.object).to eq('subscription')
       expect(sub.plan).to be_nil
+      expect(sub.quantity).to be_nil
 
       customer = Stripe::Customer.retrieve('test_customer_sub')
       expect(customer.subscriptions.data).to_not be_empty
@@ -524,6 +525,7 @@ shared_examples 'Customer Subscriptions' do
 
       expect(customer.subscriptions.data.first.id).to eq(sub.id)
       expect(customer.subscriptions.data.first.plan).to be_nil
+      expect(customer.subscriptions.data.first.quantity).to be_nil
       expect(customer.subscriptions.data.first.customer).to eq(customer.id)
       expect(customer.subscriptions.data.first.items.data[0].plan.to_hash).to eq(gold_plan.to_hash)
       expect(customer.subscriptions.data.first.items.data[0].quantity).to eq(4)
@@ -544,6 +546,7 @@ shared_examples 'Customer Subscriptions' do
 
       expect(sub.object).to eq('subscription')
       expect(sub.plan).to be_nil
+      expect(sub.quantity).to be_nil
 
       customer = Stripe::Customer.retrieve('test_customer_sub')
       expect(customer.subscriptions.data).to_not be_empty
@@ -552,6 +555,7 @@ shared_examples 'Customer Subscriptions' do
 
       expect(customer.subscriptions.data.first.id).to eq(sub.id)
       expect(customer.subscriptions.data.first.plan).to be_nil
+      expect(customer.subscriptions.data.first.quantity).to be_nil
       expect(customer.subscriptions.data.first.customer).to eq(customer.id)
       expect(customer.subscriptions.data.first.items.data[0].plan.to_hash).to eq(gold_plan.to_hash)
       expect(customer.subscriptions.data.first.items.data[0].quantity).to eq(1)

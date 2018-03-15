@@ -262,7 +262,10 @@ module StripeMock
       private
 
       def clear_top_level_plan_if_multiple_items(subscription)
-        subscription[:plan] = nil if subscription[:items][:data].size > 1
+        if subscription[:items][:data].size > 1
+          subscription[:plan] = nil
+          subscription[:quantity] = nil
+        end
       end
 
       def verify_card_present(customer, plan, subscription, params={})
