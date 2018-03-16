@@ -120,7 +120,6 @@ module StripeMock
 
         subscription = Data.mock_subscription({ id: (params[:id] || new_id('su')) })
         subscription.merge!(custom_subscription_params(plan, customer, params))
-        subscription[:items][:data] = mock_subscription_items(params[:items].values) if params[:items]
 
         # Ensure customer has card to charge if plan has no trial and is not free
         verify_card_present(customer, plan, subscription, params)

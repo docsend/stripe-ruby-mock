@@ -100,14 +100,6 @@ module StripeMock
         items.each { |i| total += (i[:quantity] || 1) * i[:plan][:amount] }
         total
       end
-
-      def mock_subscription_items(items = [])
-        data = []
-        items.each do |i|
-          data << Data.mock_subscription_item(i.merge(plan: plans[i[:plan].to_s]))
-        end
-        data
-      end
     end
   end
 end
