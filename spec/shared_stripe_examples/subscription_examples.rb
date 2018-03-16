@@ -641,6 +641,20 @@ shared_examples 'Customer Subscriptions' do
       expect(customer.subscriptions.data.first.plan.to_hash).to eq(free.to_hash)
     end
 
+    it "throws an error when updating quantity and subscription has multiple plans" do
+      gold_plan = stripe_helper.create_plan(id: 'gold')
+      addon_plan = stripe_helper.create_plan(id: 'addon')
+      customer = Stripe::Customer.create(id: 'test_customer_sub', source: gen_card_tk)
+      sub = Stripe::Subscription.create(customer: customer.id, items: [{ plan: gold_plan.id }, { plan: addon_plan.id }])
+
+      sub.quantity = 5
+      expect { sub.save }.to raise_error {|e|
+        expect(e).to be_a Stripe::InvalidRequestError
+        expect(e.http_status).to eq(400)
+        expect(e.message).to eq('Cannot update using quantity parameter when multiple plans exist on the subscription. Updates must be made to individual items instead.')
+      }
+    end
+
     [nil, 0].each do |trial_period_days|
       it "throws an error when updating a customer with no card, and plan trail_period_days = #{trial_period_days}", live: true do
         begin

@@ -219,6 +219,10 @@ module StripeMock
           subscription[:canceled_at] = nil
         end
 
+        if params[:quantity] && subscription[:items][:data].size > 1
+          raise Stripe::InvalidRequestError.new('Cannot update using quantity parameter when multiple plans exist on the subscription. Updates must be made to individual items instead.', nil, http_status: 400)
+        end
+
         params[:current_period_start] = subscription[:current_period_start]
         subscription.merge!(custom_subscription_params(plan, customer, params))
 
