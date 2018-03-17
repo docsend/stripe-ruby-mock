@@ -34,7 +34,12 @@ module StripeMock
             items_data.push(Data.mock_subscription_item(plan: plan, quantity: quantity, created: Time.now.utc.to_i))
           end
           params[:items] = Data.mock_list_object(items_data)
-          params.delete(:plan) if items_data.size > 1
+          if items_data.size == 1
+            params.merge!(:plan => items_data[0][:plan], :quantity => items_data[0][:quantity])
+          elsif items_data.size > 1
+            params.delete(:plan)
+            params.delete(:quantity)
+          end
         end
 
         params

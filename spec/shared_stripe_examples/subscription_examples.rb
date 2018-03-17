@@ -14,7 +14,7 @@ shared_examples 'Customer Subscriptions' do
       expect(customer.subscriptions.data).to be_empty
       expect(customer.subscriptions.count).to eq(0)
 
-      sub = Stripe::Subscription.create({ items: [{ plan: 'silver' }],
+      sub = Stripe::Subscription.create({ items: [{ plan: 'silver', :quantity => 4 }],
                                           customer: customer.id, metadata: { foo: "bar", example: "yes" } })
 
       expect(sub.object).to eq('subscription')
@@ -31,6 +31,7 @@ shared_examples 'Customer Subscriptions' do
 
       expect(customer.subscriptions.data.first.id).to eq(sub.id)
       expect(customer.subscriptions.data.first.plan.to_hash).to eq(plan.to_hash)
+      expect(customer.subscriptions.data.first.quantity).to eq(4)
       expect(customer.subscriptions.data.first.customer).to eq(customer.id)
       expect(customer.subscriptions.data.first.metadata.foo).to eq( "bar" )
       expect(customer.subscriptions.data.first.metadata.example).to eq( "yes" )
