@@ -24,9 +24,9 @@ module StripeMock
           params.merge!({status: 'trialing', current_period_end: end_time, trial_start: start_time, trial_end: end_time})
         end
 
-        items = options[:items]
+        items = options[:items] || []
         items = items.values if items.respond_to?(:values)
-        if items
+        if items.any?
           items_data = []
           items.each do |item|
             plan = assert_existence(:plan, item[:plan], plans[item[:plan]])
