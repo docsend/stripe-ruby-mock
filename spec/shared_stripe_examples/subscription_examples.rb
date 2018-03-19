@@ -14,7 +14,7 @@ shared_examples 'Customer Subscriptions' do
       expect(customer.subscriptions.data).to be_empty
       expect(customer.subscriptions.count).to eq(0)
 
-      sub = Stripe::Subscription.create({ items: [{ plan: 'silver' }],
+      sub = Stripe::Subscription.create({ items: [{ plan: 'silver', :quantity => 4 }],
                                           customer: customer.id, metadata: { foo: "bar", example: "yes" } })
 
       expect(sub.object).to eq('subscription')
@@ -31,6 +31,7 @@ shared_examples 'Customer Subscriptions' do
 
       expect(customer.subscriptions.data.first.id).to eq(sub.id)
       expect(customer.subscriptions.data.first.plan.to_hash).to eq(plan.to_hash)
+      expect(customer.subscriptions.data.first.quantity).to eq(4)
       expect(customer.subscriptions.data.first.customer).to eq(customer.id)
       expect(customer.subscriptions.data.first.metadata.foo).to eq( "bar" )
       expect(customer.subscriptions.data.first.metadata.example).to eq( "yes" )
@@ -511,11 +512,12 @@ shared_examples 'Customer Subscriptions' do
       customer = Stripe::Customer.create(id: 'test_customer_sub', source: gen_card_tk, plan: silver_plan.id)
 
       sub = Stripe::Subscription.retrieve(customer.subscriptions.data.first.id)
-      sub.items = [{ plan: gold_plan.id, quantity: 2 }, { plan: addon_plan.id, quantity: 2 }]
+      sub.items = [{ plan: gold_plan.id, quantity: 4 }, { plan: addon_plan.id, quantity: 5 }]
       expect(sub.save).to be_truthy
 
       expect(sub.object).to eq('subscription')
       expect(sub.plan).to be_nil
+      expect(sub.quantity).to be_nil
 
       customer = Stripe::Customer.retrieve('test_customer_sub')
       expect(customer.subscriptions.data).to_not be_empty
@@ -524,9 +526,12 @@ shared_examples 'Customer Subscriptions' do
 
       expect(customer.subscriptions.data.first.id).to eq(sub.id)
       expect(customer.subscriptions.data.first.plan).to be_nil
+      expect(customer.subscriptions.data.first.quantity).to be_nil
       expect(customer.subscriptions.data.first.customer).to eq(customer.id)
       expect(customer.subscriptions.data.first.items.data[0].plan.to_hash).to eq(gold_plan.to_hash)
+      expect(customer.subscriptions.data.first.items.data[0].quantity).to eq(4)
       expect(customer.subscriptions.data.first.items.data[1].plan.to_hash).to eq(addon_plan.to_hash)
+      expect(customer.subscriptions.data.first.items.data[1].quantity).to eq(5)
     end
 
     it "updates a stripe customer's existing subscription with multple plans when multiple plans inside of items" do
@@ -537,11 +542,12 @@ shared_examples 'Customer Subscriptions' do
       customer = Stripe::Customer.create(id: 'test_customer_sub', source: gen_card_tk)
       sub = Stripe::Subscription.create(customer: customer.id, items: [{ plan: silver_plan.id }, { plan: addon1_plan.id }])
 
-      sub.items = [{ plan: gold_plan.id, quantity: 2 }, { plan: addon2_plan.id, quantity: 2 }]
+      sub.items = [{ plan: gold_plan.id, quantity: 1 }, { plan: addon2_plan.id, quantity: 5 }]
       expect(sub.save).to be_truthy
 
       expect(sub.object).to eq('subscription')
       expect(sub.plan).to be_nil
+      expect(sub.quantity).to be_nil
 
       customer = Stripe::Customer.retrieve('test_customer_sub')
       expect(customer.subscriptions.data).to_not be_empty
@@ -550,9 +556,12 @@ shared_examples 'Customer Subscriptions' do
 
       expect(customer.subscriptions.data.first.id).to eq(sub.id)
       expect(customer.subscriptions.data.first.plan).to be_nil
+      expect(customer.subscriptions.data.first.quantity).to be_nil
       expect(customer.subscriptions.data.first.customer).to eq(customer.id)
       expect(customer.subscriptions.data.first.items.data[0].plan.to_hash).to eq(gold_plan.to_hash)
+      expect(customer.subscriptions.data.first.items.data[0].quantity).to eq(1)
       expect(customer.subscriptions.data.first.items.data[1].plan.to_hash).to eq(addon2_plan.to_hash)
+      expect(customer.subscriptions.data.first.items.data[1].quantity).to eq(5)
     end
 
     it 'when adds coupon', live: true do
@@ -631,6 +640,20 @@ shared_examples 'Customer Subscriptions' do
       expect(customer.subscriptions.count).to eq(1)
       expect(customer.subscriptions.data.length).to eq(1)
       expect(customer.subscriptions.data.first.plan.to_hash).to eq(free.to_hash)
+    end
+
+    it "throws an error when updating quantity and subscription has multiple plans" do
+      gold_plan = stripe_helper.create_plan(id: 'gold')
+      addon_plan = stripe_helper.create_plan(id: 'addon')
+      customer = Stripe::Customer.create(id: 'test_customer_sub', source: gen_card_tk)
+      sub = Stripe::Subscription.create(customer: customer.id, items: [{ plan: gold_plan.id }, { plan: addon_plan.id }])
+
+      sub.quantity = 5
+      expect { sub.save }.to raise_error {|e|
+        expect(e).to be_a Stripe::InvalidRequestError
+        expect(e.http_status).to eq(400)
+        expect(e.message).to eq('Cannot update using quantity parameter when multiple plans exist on the subscription. Updates must be made to individual items instead.')
+      }
     end
 
     [nil, 0].each do |trial_period_days|
@@ -908,13 +931,13 @@ shared_examples 'Customer Subscriptions' do
       expect(subscription.items.object).to eq('list')
       expect(subscription.items.data.class).to eq(Array)
       expect(subscription.items.data.count).to eq(1)
-      expect(subscription.items.data.first.id).to eq('test_txn_default')
-      expect(subscription.items.data.first.created).to eq(1504716183)
+      expect(subscription.items.data.first.id).to eq('si_1AwFf62eZvKYlo2C9u6Dhf9')
+      expect(subscription.items.data.first.created).to eq(1504035973)
       expect(subscription.items.data.first.object).to eq('subscription_item')
-      expect(subscription.items.data.first.plan.amount).to eq(0)
-      expect(subscription.items.data.first.plan.created).to eq(1466698898)
+      expect(subscription.items.data.first.plan.amount).to eq(999)
+      expect(subscription.items.data.first.plan.created).to eq(1504035972)
       expect(subscription.items.data.first.plan.currency).to eq('usd')
-      expect(subscription.items.data.first.quantity).to eq(2)
+      expect(subscription.items.data.first.quantity).to eq(1)
     end
   end
 

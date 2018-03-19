@@ -6,22 +6,13 @@ module StripeMock
         customer[:subscriptions][:data].find{|sub| sub[:id] == sub_id }
       end
 
-      def resolve_subscription_changes(subscription, plans, customer, options = {})
-        subscription.merge!(custom_subscription_params(plans, customer, options))
-        subscription[:items][:data] = plans.map { |plan| Data.mock_subscription_item({ plan: plan }) }
-        subscription
-      end
-
-      def custom_subscription_params(plans, cus, options = {})
+      def custom_subscription_params(plan, cus, options = {})
         verify_trial_end(options[:trial_end]) if options[:trial_end]
-
-        plan = plans.first if plans.size == 1
 
         now = Time.now.utc.to_i
         created_time = options[:created] || now
         start_time = options[:current_period_start] || now
-        params = { customer: cus[:id], current_period_start: start_time, created: created_time }
-        params.merge!({ :plan => (plans.size == 1 ? plans.first : nil) })
+        params = { plan: plan, customer: cus[:id], current_period_start: start_time, created: created_time }
         params.merge! options.select {|k,v| k =~ /application_fee_percent|quantity|metadata|tax_percent/}
         # TODO: Implement coupon logic
 
@@ -31,6 +22,24 @@ module StripeMock
         else
           end_time = options[:trial_end] || (Time.now.utc.to_i + plan[:trial_period_days]*86400)
           params.merge!({status: 'trialing', current_period_end: end_time, trial_start: start_time, trial_end: end_time})
+        end
+
+        items = options[:items] || []
+        items = items.values if items.respond_to?(:values)
+        if items.any?
+          items_data = []
+          items.each do |item|
+            plan = assert_existence(:plan, item[:plan], plans[item[:plan]])
+            quantity = item[:quantity] || 1
+            items_data.push(Data.mock_subscription_item(plan: plan, quantity: quantity, created: Time.now.utc.to_i))
+          end
+          params[:items] = Data.mock_list_object(items_data)
+          if items_data.size == 1
+            params.merge!(:plan => items_data[0][:plan], :quantity => items_data[0][:quantity])
+          elsif items_data.size > 1
+            params.delete(:plan)
+            params.delete(:quantity)
+          end
         end
 
         params
