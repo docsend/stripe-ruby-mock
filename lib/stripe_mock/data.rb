@@ -118,12 +118,14 @@ module StripeMock
         currency: currency,
         sources: {
           object: "list",
+          has_more: false,
           total_count: sources.size,
           url: "/v1/customers/#{cus_id}/sources",
           data: sources
         },
         subscriptions: {
           object: "list",
+          has_more: false,
           total_count: 0,
           url: "/v1/customers/#{cus_id}/subscriptions",
           data: []
@@ -337,6 +339,7 @@ module StripeMock
         period_start: 1349738950,
         lines: {
           object: "list",
+          has_more: false,
           total_count: lines.count,
           url: "/v1/invoices/#{in_id}/lines",
           data: lines
@@ -528,6 +531,7 @@ module StripeMock
         },
         cards: {
           object: "list",
+          has_more: false,
           url: "/v1/recipients/#{rp_id}/cards",
           data: cards,
           total_count: cards.count
