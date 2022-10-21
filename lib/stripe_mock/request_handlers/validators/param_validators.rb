@@ -93,17 +93,6 @@ module StripeMock
           message = invalid_plan_interval_message
           raise Stripe::InvalidRequestError.new(message, :interval)
         end
-
-        unless SUPPORTED_CURRENCIES.include?(params[:currency])
-          message = invalid_currency_message(params[:currency])
-          raise Stripe::InvalidRequestError.new(message, :currency)
-        end
-
-        unless params[:amount].integer?
-          message = invalid_integer_message(params[:amount])
-          raise Stripe::InvalidRequestError.new(message, :amount)
-        end
-
       end
 
       def validate_create_price_params(params)
@@ -119,16 +108,6 @@ module StripeMock
         if prices[price_id]
           message = already_exists_message(Stripe::Price)
           raise Stripe::InvalidRequestError.new(message, :id)
-        end
-
-        unless products[product_id]
-          message = not_found_message(Stripe::Product, product_id)
-          raise Stripe::InvalidRequestError.new(message, :product)
-        end
-
-        unless SUPPORTED_CURRENCIES.include?(params[:currency])
-          message = invalid_currency_message(params[:currency])
-          raise Stripe::InvalidRequestError.new(message, :currency)
         end
       end
 
