@@ -99,12 +99,6 @@ module StripeMock
       def validate_create_price_params(params)
         price_id = params[:id].to_s
 
-        unless params[:product] || params[:product_data]
-          raise Stripe::InvalidRequestError("Requires product or product_data")
-        end
-
-        product_id = params[:product] || create_product(nil, nil, params[:product_data], nil).id
-
         if prices[price_id]
           message = already_exists_message(Stripe::Price)
           raise Stripe::InvalidRequestError.new(message, :id)
