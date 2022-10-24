@@ -96,14 +96,7 @@ module StripeMock
 
       end
 
-      def validate_create_price_params(params)
-        price_id = params[:id].to_s
-
-        if prices[price_id]
-          message = already_exists_message(Stripe::Price)
-          raise Stripe::InvalidRequestError.new(message, :id)
-        end
-      end
+      def validate_create_price_params(params); end
 
       def validate_list_prices_params(params)
         if params[:lookup_keys] && !params[:lookup_keys].is_a?(Array)
