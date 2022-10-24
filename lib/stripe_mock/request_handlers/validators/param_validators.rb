@@ -99,7 +99,6 @@ module StripeMock
       def validate_create_price_params(params)
         price_id = params[:id].to_s
 
-        require_param(:currency) unless params[:currency]
         unless params[:product] || params[:product_data]
           raise Stripe::InvalidRequestError("Requires product or product_data")
         end
