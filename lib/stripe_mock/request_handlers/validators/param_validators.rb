@@ -65,9 +65,68 @@ module StripeMock
         "Invalid currency: #{my_val.downcase}. Stripe currently supports these currencies: #{SUPPORTED_CURRENCIES.join(", ")}"
       end
 
-      def validate_create_plan_params(params); end
+      def validate_create_plan_params(params)
+        @base_strategy.create_plan_params.keys.each do |attr_name|
+          message =
+            if attr_name == :amount
+              "Plans require an `#{attr_name}` parameter to be set."
+            else
+              "Missing required param: #{attr_name}."
+            end
+          raise Stripe::InvalidRequestError.new(message, attr_name) if params[attr_name].nil?
+        end
 
-      def validate_create_price_params(params); end
+        if plans[plan_id]
+          message = already_exists_message(Stripe::Plan)
+          raise Stripe::InvalidRequestError.new(message, :id)
+        end
+
+        unless products[product_id]
+          message = not_found_message(Stripe::Product, product_id)
+          raise Stripe::InvalidRequestError.new(message, :product)
+        end
+
+        unless SUPPORTED_PLAN_INTERVALS.include?(params[:interval])
+          message = invalid_plan_interval_message
+          raise Stripe::InvalidRequestError.new(message, :interval)
+        end
+
+        unless SUPPORTED_CURRENCIES.include?(params[:currency])
+          message = invalid_currency_message(params[:currency])
+          raise Stripe::InvalidRequestError.new(message, :currency)
+        end
+
+        unless params[:amount].integer?
+          message = invalid_integer_message(params[:amount])
+          raise Stripe::InvalidRequestError.new(message, :amount)
+        end
+      end
+
+      def validate_create_price_params(params)
+        price_id = params[:id].to_s
+
+        require_param(:currency) unless params[:currency]
+        unless params[:product] || params[:product_data]
+          raise Stripe::InvalidRequestError("Requires product or product_data")
+        end
+
+        product_id = params[:product] || create_product(nil, nil, params[:product_data], nil).id
+
+        if prices[price_id]
+          message = already_exists_message(Stripe::Price)
+          raise Stripe::InvalidRequestError.new(message, :id)
+        end
+
+        unless products[product_id]
+          message = not_found_message(Stripe::Product, product_id)
+          raise Stripe::InvalidRequestError.new(message, :product)
+        end
+
+        unless SUPPORTED_CURRENCIES.include?(params[:currency])
+          message = invalid_currency_message(params[:currency])
+          raise Stripe::InvalidRequestError.new(message, :currency)
+        end
+      end
 
       def validate_list_prices_params(params)
         if params[:lookup_keys] && !params[:lookup_keys].is_a?(Array)
